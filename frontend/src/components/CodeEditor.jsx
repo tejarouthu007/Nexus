@@ -2,56 +2,48 @@ import React, { useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@uiw/react-codemirror";
+import { X } from "lucide-react";
 
-const CodeEditor = () => {
-  const initialWidth = 500;
-  const [left, setLeft] = useState(window.innerWidth - initialWidth);
-  const minWidth = 300;
-  const maxLeft = window.innerWidth - minWidth; 
-
-  const handleMouseDown = (e) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startLeft = left;
-
-    const onMouseMove = (event) => {
-      const delta = event.clientX - startX;
-      let newLeft = startLeft + delta;
-      newLeft = Math.min(newLeft, maxLeft);
-      newLeft = Math.max(0, newLeft);
-      setLeft(newLeft);
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
-
+const CodeEditor = ({ files, activeFile, setActiveFile, closeFile }) => {
   return (
-    <div className="relative h-screen w-screen bg-gray-900">
-      <div
-        className="absolute top-1/2 transform -translate-y-1/2 bg-gray-800 border border-gray-700 rounded-lg"
-        style={{ left, right: 0, height: 400 }}
-      >
-        {/* Left Drag Handle */}
-        <div
-          className="absolute top-0 left-0 h-full w-2 bg-gray-600 cursor-ew-resize"
-          onMouseDown={handleMouseDown}
-        />
+    <div className="flex-1 h-full flex flex-col bg-gray-900">
+      {/* File Tabs */}
+      <div className="flex bg-gray-800 text-gray-300 p-2 space-x-2">
+        {files.map((file) => (
+          <div
+            key={file.name}
+            className={`flex items-center px-3 py-1 rounded-t-md cursor-pointer ${
+              file.name === activeFile.name ? "bg-gray-700 text-white" : ""
+            }`}
+            onClick={() => setActiveFile(file)}
+          >
+            {file.name}
+            <X
+              size={16}
+              className="ml-2 text-gray-400 hover:text-red-500"
+              onClick={(e) => {
+                e.stopPropagation();
+                closeFile(file.name);
+              }}
+            />
+          </div>
+        ))}
+      </div>
 
-        {/* CodeMirror Editor */}
-        <div className="w-full h-full">
+      {/* Code Editor */}
+      <div className="flex-1">
+        {activeFile ? (
           <CodeMirror
-            value="// Write your code here"
+            value={activeFile.content}
             extensions={[javascript()]}
             theme={oneDark}
             className="w-full h-full"
           />
-        </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-gray-400">
+            No file opened
+          </div>
+        )}
       </div>
     </div>
   );

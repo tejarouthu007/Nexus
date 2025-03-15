@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import CodeEditor from './components/CodeEditor'
+import Editor from './pages/Editor';
 
 function App() {
 
   return (
     <div >
 
-      <CodeEditor />
+      <Editor />
     </div>
   )
 }
