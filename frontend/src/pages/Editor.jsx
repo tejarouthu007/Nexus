@@ -1,8 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation, useParams } from "react-router-dom";
+import { useSocket } from "../context/SocketProvider";
 import Sidebar from "../components/SideBar";
 import CodeEditor from "../components/CodeEditor";
 
 const MainLayout = () => {
+
+  const { state } = useLocation();
+  const socket = useSocket();
+
+  useEffect(() => {
+    if (socket && state?.roomId && state.username ) {
+        socket.emit("join_room", { roomId: state.roomId, username: state.username });
+
+        return () => {
+            socket.emit("leave_room", { roomId: state.roomId, username: state.username });
+        };
+    }
+  }, []);
+
+
   const [files, setFiles] = useState([
     { name: "index.js", content: "// Write your JS code here" },
     { name: "style.css", content: "/* Your CSS here */" },

@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Home = () => {
-  const [userName, setUserName] = useState("");
+  const [username, setUsername] = useState("");
   const [roomId, setRoomId] = useState("");
   const navigate = useNavigate();
 
   const joinRoom = () => {
-    if (userName.trim() && roomId.trim()) {
-      navigate(`/editor/${roomId}`, { state: { userName } });
+    if (username.trim() && roomId.trim()) {
+      navigate(`/editor`, { state: { roomId, username } });
     }
   };
 
@@ -20,8 +20,8 @@ const Home = () => {
         <input
           type="text"
           placeholder="Enter your name"
-          value={userName}
-          onChange={(e) => setUserName(e.target.value)}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           className="w-full p-2 mb-3 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
