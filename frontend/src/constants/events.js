@@ -1,4 +1,4 @@
-export const SOCKET_EVENTS = {
+export const EVENTS = {
     CONNECTION: "connect",
     DISCONNECT: "disconnect",
   

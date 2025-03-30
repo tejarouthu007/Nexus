@@ -11,9 +11,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173", // Allow only your frontend
+        origin: "http://localhost:5173",
         methods: ["GET", "POST"],
-        credentials: true, // Allow credentials (cookies, authentication headers)
+        credentials: true,
     }
 });
 
@@ -22,22 +22,21 @@ app.use(cors({
     methods: ["GET", "POST"],
     credentials: true,
 }));
-
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
 
-// In-memory storage for users
+// In-memory storage for users and versions
 let userSocketMap = [];
 const codeVersions = {};
 
 // Handle socket connections
 io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
-    console.log("New user connected:", socket.id);
+    console.log(`[CONNECTED] User: ${socket.id}`);
 
     // Authenticate user
     socket.on(SOCKET_EVENTS.AUTHENTICATE, ({ username }) => {
-        console.log(`User authenticated: ${username}`);
+        console.log(`[AUTH] User authenticated: ${username}`);
     });
 
     // Join Room
@@ -45,33 +44,28 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
         const user = { socketId: socket.id, username, roomId };
         userSocketMap.push(user);
         socket.join(roomId);
-        console.log(`${username} joined room ${roomId}`);
 
-        io.to(roomId).emit(SOCKET_EVENTS.ROOM.USER_JOINED, {
-            user,
-            users: getUsersInRoom(roomId),
-        });
+        console.log(`[JOIN] ${username} joined room ${roomId}`);
+        broadcastUsers(roomId);
     });
 
     // Leave Room
     socket.on(SOCKET_EVENTS.ROOM.LEAVE, ({ roomId, username }) => {
         userSocketMap = userSocketMap.filter((u) => u.socketId !== socket.id);
         socket.leave(roomId);
-        console.log(`${username} left room ${roomId}`);
 
-        io.to(roomId).emit(SOCKET_EVENTS.ROOM.USER_LEFT, {
-            username,
-            users: getUsersInRoom(roomId),
-        });
+        console.log(`[LEAVE] ${username} left room ${roomId}`);
+        broadcastUsers(roomId);
     });
 
     // Code Events
     socket.on(SOCKET_EVENTS.CODE.CHANGE, ({ roomId, code }) => {
-        io.to(roomId).emit(SOCKET_EVENTS.CODE.UPDATE, { code });
+        console.log(code);
+        socket.to(roomId).emit(SOCKET_EVENTS.CODE.UPDATE, { code });
     });
 
-    socket.on(SOCKET_EVENTS.CODE.CURSOR_MOVE, ({ roomId, cursor }) => {
-        io.to(roomId).emit(SOCKET_EVENTS.CODE.CURSOR_UPDATE, { cursor });
+    socket.on(SOCKET_EVENTS.CODE.CURSOR_MOVE, ({ roomId, username, cursor }) => {
+        socket.to(roomId).emit(SOCKET_EVENTS.CODE.CURSOR_UPDATE, { username, cursor });
     });
 
     // Chat Events
@@ -91,20 +85,24 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     socket.on(SOCKET_EVENTS.VERSIONING.SAVE, ({ roomId, code }) => {
         if (!codeVersions[roomId]) codeVersions[roomId] = [];
         codeVersions[roomId].push({ code, timestamp: new Date() });
-    
+
+        console.log(`[VERSION] Code saved in room ${roomId}. Total Versions: ${codeVersions[roomId].length}`);
+
         io.to(roomId).emit(SOCKET_EVENTS.VERSIONING.SAVED, {
             message: "Code saved successfully",
             versions: codeVersions[roomId].length,
         });
     });
-    
+
     socket.on(SOCKET_EVENTS.VERSIONING.LOAD_VERSION, ({ roomId, versionIndex }) => {
         const versions = codeVersions[roomId] || [];
         if (versionIndex < 0 || versionIndex >= versions.length) {
             socket.emit(SOCKET_EVENTS.ERROR, { message: "Invalid version index" });
             return;
         }
-    
+
+        console.log(`[VERSION] Loaded version ${versionIndex} for room ${roomId}`);
+
         socket.emit(SOCKET_EVENTS.VERSIONING.VERSION_LOADED, {
             code: versions[versionIndex].code,
             timestamp: versions[versionIndex].timestamp,
@@ -113,21 +111,33 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
 
     // Execute Code
     socket.on(SOCKET_EVENTS.EXECUTION.RUN, ({ roomId, code, language }) => {
-        console.log(`Executing code in ${language} for room: ${roomId}`);
-    
+        console.log(`[EXECUTION] Running ${language} code in room ${roomId}`);
+        
         // executeCode(code, language, (output) => {
         //     io.to(roomId).emit(SOCKET_EVENTS.EXECUTION.RESULT, { output });
         // });
     });
 
-    // Lock Code
-    
+    // Lock Code (To Be Implemented)
+    socket.on(SOCKET_EVENTS.LOCK.CODE_LOCK, ({ roomId, username }) => {
+        console.log(`[LOCK] ${username} locked the code in room ${roomId}`);
+        // Implement locking mechanism here
+    });
+
     // Handle Disconnection
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {
         userSocketMap = userSocketMap.filter((u) => u.socketId !== socket.id);
-        console.log("User disconnected:", socket.id);
+        console.log(`[DISCONNECT] User: ${socket.id} disconnected`);
     });
 });
+
+// Broadcast users in a room
+function broadcastUsers(roomId) {
+    const users = getUsersInRoom(roomId);
+    console.log(`[ROOM USERS] Room ${roomId} - Users:`, users.map(u => u.username));
+
+    io.to(roomId).emit(SOCKET_EVENTS.ROOM.USER_LIST, users);
+}
 
 // Get all users in a room
 function getUsersInRoom(roomId) {
@@ -135,6 +145,5 @@ function getUsersInRoom(roomId) {
 }
 
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });
-
