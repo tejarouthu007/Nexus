@@ -6,6 +6,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@uiw/react-codemirror";
 import { FileText, Play, MessageSquare } from "lucide-react";
 import { EVENTS } from "../constants/events";
+import Chat from "../components/Chat";
 
 const MainLayout = () => {
   const { state } = useLocation();
@@ -67,7 +68,7 @@ const MainLayout = () => {
           <div className="w-64 bg-gray-900 h-full p-4 text-gray-300">
             {activeTab === "files" && <div>Files Panel</div>}
             {activeTab === "run" && <div>Run Code</div>}
-            {activeTab === "chat" && <div>User Chat</div>}
+            {activeTab === "chat" && <Chat roomId={state.roomId} username={state.username}/>}
           </div>
         )}
       </div>
