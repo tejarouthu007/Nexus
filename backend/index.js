@@ -28,7 +28,7 @@ const PORT = process.env.PORT || 5000;
 
 // In-memory storage for users and versions
 let userSocketMap = [];
-const codeVersions = {};
+const codeMap = new Map();
 
 // Handle socket connections
 io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
@@ -47,6 +47,9 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
 
         console.log(`[JOIN] ${username} joined room ${roomId}`);
         broadcastUsers(roomId);
+        
+        const currentCode = codeMap.get(roomId) || '';
+        socket.emit(SOCKET_EVENTS.CODE.SYNC, { code: currentCode });
     });
 
     // Leave Room
@@ -60,7 +63,8 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
 
     // Code Events
     socket.on(SOCKET_EVENTS.CODE.CHANGE, ({ roomId, code }) => {
-        console.log(code);
+        codeMap.set(roomId, code);
+        console.log(codeMap.get(roomId));
         socket.to(roomId).emit(SOCKET_EVENTS.CODE.UPDATE, { code });
     });
 
@@ -96,18 +100,7 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     });
 
     socket.on(SOCKET_EVENTS.VERSIONING.LOAD_VERSION, ({ roomId, versionIndex }) => {
-        const versions = codeVersions[roomId] || [];
-        if (versionIndex < 0 || versionIndex >= versions.length) {
-            socket.emit(SOCKET_EVENTS.ERROR, { message: "Invalid version index" });
-            return;
-        }
-
-        console.log(`[VERSION] Loaded version ${versionIndex} for room ${roomId}`);
-
-        socket.emit(SOCKET_EVENTS.VERSIONING.VERSION_LOADED, {
-            code: versions[versionIndex].code,
-            timestamp: versions[versionIndex].timestamp,
-        });
+        
     });
 
     // Execute Code

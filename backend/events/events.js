@@ -15,6 +15,7 @@ export const SOCKET_EVENTS = {
     CODE: {
       CHANGE: "code_change",
       UPDATE: "code_update",
+      SYNC: 'code_sync',
       CURSOR_MOVE: "cursor_move",
       CURSOR_UPDATE: "cursor_position_update",
     },

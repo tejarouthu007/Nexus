@@ -7,6 +7,7 @@ import { oneDark } from "@uiw/react-codemirror";
 import { FileText, Play, MessageSquare } from "lucide-react";
 import { EVENTS } from "../constants/events";
 import Chat from "../components/Chat";
+import RunCode from "../components/RunCode";
 
 const MainLayout = () => {
   const { state } = useLocation();
@@ -42,6 +43,11 @@ const MainLayout = () => {
       setCode(code);
     });
 
+    socket.on(EVENTS.CODE.SYNC, ({ code }) => {
+      setCode(code);
+      console.log(code);
+    });
+
     return () => {
       socket.off(EVENTS.CODE.UPDATE);
     };
@@ -67,7 +73,7 @@ const MainLayout = () => {
         {activeTab && (
           <div className="w-64 bg-gray-900 h-full p-4 text-gray-300">
             {activeTab === "files" && <div>Files Panel</div>}
-            {activeTab === "run" && <div>Run Code</div>}
+            {activeTab === "run" && <RunCode code={code}/>}
             {activeTab === "chat" && <Chat roomId={state.roomId} username={state.username}/>}
           </div>
         )}
@@ -83,6 +89,7 @@ const MainLayout = () => {
             theme={oneDark}
             className="w-full h-full"
             onChange={handleCodeChange}
+            style={{ fontSize: "16px" }}
           />
         </div>
       </div>

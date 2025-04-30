@@ -11,10 +11,11 @@ export const EVENTS = {
       USER_LEFT: "user_left",
       USER_LIST: "user_list",
     },
-  
+    
     CODE: {
       CHANGE: "code_change",
       UPDATE: "code_update",
+      SYNC: 'code_sync',
       CURSOR_MOVE: "cursor_move",
       CURSOR_UPDATE: "cursor_position_update",
     },
