@@ -11,20 +11,21 @@ import RunCode from "../components/RunCode";
 
 const MainLayout = () => {
   const { state } = useLocation();
-  const socket = useSocket();
+  const socket = useSocket().socket;
   
   const [code, setCode] = useState("// Start coding here...");
   const [activeTab, setActiveTab] = useState(null);
 
+  
   useEffect(() => {
-    if (socket && state?.roomId && state.username) {
+    if (socket?.emit && state?.roomId && state.username) {
       socket.emit(EVENTS.ROOM.JOIN, { roomId: state.roomId, username: state.username });
 
       return () => {
         socket.emit(EVENTS.ROOM.LEAVE, { roomId: state.roomId, username: state.username });
       };
     }
-  }, []);
+  }, [socket, state?.roomId, state?.username]);
 
   // Emit code changes
   const handleCodeChange = (newCode) => {

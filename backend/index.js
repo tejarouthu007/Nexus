@@ -75,7 +75,7 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     // Chat Events
     socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, ({ roomId, username, message }) => {
         console.log(roomId+" "+username+" "+message);
-        io.to(roomId).emit(SOCKET_EVENTS.CHAT.NEW_MESSAGE, { username, message });
+        socket.to(roomId).emit(SOCKET_EVENTS.CHAT.NEW_MESSAGE, { username, message });
     });
 
     socket.on(SOCKET_EVENTS.CHAT.TYPING, ({ roomId, username }) => {

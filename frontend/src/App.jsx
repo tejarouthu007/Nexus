@@ -11,10 +11,8 @@ function App() {
       <SocketProvider>
         <BrowserRouter>
         <Routes>
-          <Route>
-            <Route path="/" element={<Home />} />
-            <Route path="/editor" element={<Editor />} />
-          </Route>
+          <Route path="/" element={<Home />} />
+          <Route path="/editor" element={<Editor />} />
         </Routes>
         </BrowserRouter>
       </SocketProvider>
