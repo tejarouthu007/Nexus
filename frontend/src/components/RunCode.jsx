@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const RunCode = ({ code }) => {
+const RunCode = ({ code, language }) => {
   const [output, setOutput] = useState("Run to view output");
 
   const runCode = () => {
