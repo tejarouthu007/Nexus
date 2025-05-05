@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { EVENTS } from "../constants/events";
 
-const socket = io("http://localhost:5000", {
+const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const socket = io(VITE_BACKEND_URL, {
   withCredentials: true,
   autoConnect: false,
 });

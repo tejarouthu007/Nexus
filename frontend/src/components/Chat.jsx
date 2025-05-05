@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useSocket } from "../context/SocketProvider";
 import { EVENTS } from "../constants/events";
+import { User, MessageSquare } from "lucide-react";
 
 const Chat = ({ roomId, username }) => {
   const [newMessage, setMessage] = useState("");
@@ -25,13 +26,24 @@ const Chat = ({ roomId, username }) => {
       <h1 className="text-xl font-bold mb-2">Chat</h1>
 
       {/* Scrollable chat messages */}
-      <div className="border p-2 overflow-y-auto flex-grow">
+      <div className="p-2 overflow-auto flex-grow">
         {messages.map((msg, index) => (
-          <p key={index} className="p-2 rounded my-1">
-            <strong>{msg.user}:</strong> {msg.message}
-          </p>
+          <div
+            key={index}
+            className="p-3 mb-2 flex gap-3 items-start rounded-lg border border-gray-200 bg-blue shadow-sm"
+          >
+            <div className="flex flex-col items-center gap-2 pt-1">
+              <User size={18} className="text-green-500" />
+              <MessageSquare size={18} className="text-blue-500" />
+            </div>
+            <div className="flex flex-col">
+              <p className="font-semibold">{msg.user}</p>
+              <p>{msg.message}</p>
+            </div>
+          </div>
         ))}
       </div>
+
 
       {/* Input and Send button at bottom */}
       <div className="mt-2 flex">
@@ -39,6 +51,12 @@ const Chat = ({ roomId, username }) => {
           type="text"
           value={newMessage}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
           className="flex-grow border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Type a message..."
         />
@@ -49,6 +67,7 @@ const Chat = ({ roomId, username }) => {
           Send
         </button>
       </div>
+
     </div>
   );
 };

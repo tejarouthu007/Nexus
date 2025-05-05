@@ -10,6 +10,7 @@ export const EVENTS = {
       USER_JOINED: "user_joined",
       USER_LEFT: "user_left",
       USER_LIST: "user_list",
+      GET_USERS: "get_users",
     },
     
     CODE: {
