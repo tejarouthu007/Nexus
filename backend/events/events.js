@@ -19,6 +19,8 @@ export const SOCKET_EVENTS = {
       SYNC: 'code_sync',
       CURSOR_MOVE: "cursor_move",
       CURSOR_UPDATE: "cursor_position_update",
+      LANG_CHANGE: "lang_change",
+      LANG_UPDATE: "lang_update",
     },
   
     EXECUTION: {

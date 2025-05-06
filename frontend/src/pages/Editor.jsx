@@ -90,7 +90,6 @@ const Editor = () => {
     const col = pos - line.from;
   
     const cursorPos = { line: line.number - 1, col };
-    console.log("Cursor position:", cursorPos);
   
     if (socket && state?.roomId) {
       socket.emit(EVENTS.CODE.CHANGE, { roomId: state.roomId, code: newCode });
@@ -99,6 +98,13 @@ const Editor = () => {
         username: state.username,
         cursor: cursorPos,
       });
+    }
+  };
+
+  const handleLanguageChange = ( language ) => {
+    setLanguage(language);
+    if (socket && state?.roomId) {
+      socket.emit(EVENTS.CODE.LANG_CHANGE, { roomId:state.roomId, language });
     }
   };
 
@@ -111,7 +117,6 @@ const Editor = () => {
   useEffect(() => {
     if (!socket) return;
   
-  
     const clearCursorTimeout = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current); 
@@ -123,8 +128,9 @@ const Editor = () => {
       clearCursorTimeout();
     });
   
-    socket.on(EVENTS.CODE.SYNC, ({ code }) => {
+    socket.on(EVENTS.CODE.SYNC, ({ code, language }) => {
       setCode(code);
+      setLanguage(language);
       clearCursorTimeout();
     });
   
@@ -146,16 +152,25 @@ const Editor = () => {
         return newMap;
       });
     });
+
+    socket.on(EVENTS.CODE.LANG_UPDATE, ({ language }) => {
+      setLanguage(language);
+    })
   
     return () => {
       socket.off(EVENTS.CODE.UPDATE);
+      socket.off(EVENTS.CODE.LANG_UPDATE);
       socket.off(EVENTS.CODE.CURSOR_UPDATE);
       clearCursorTimeout(); 
     };
   }, [socket]);
   
 
-  const currentExtension = useMemo(() => languageMap[language](), [language]);
+  const currentExtension = useMemo(() => {
+    const lang = languageMap[language];
+    return typeof lang === "function" ? lang() : lang;
+  }, [language]);
+  
 
   return (
     <div className="flex h-screen"> 
@@ -197,7 +212,7 @@ const Editor = () => {
           <div className="flex gap-3">
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => handleLanguageChange(e.target.value)}
               className="border-2 bg-gray-700 text-white rounded px-2 py-1"
             >
               {languageOptions.map((lang) => (

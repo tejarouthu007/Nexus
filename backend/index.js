@@ -28,6 +28,7 @@ const PORT = process.env.PORT || 5000;
 
 let userSocketMap = [];
 const codeMap = new Map();
+const langMap = new Map();
 
 // Handle socket connections
 io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
@@ -44,7 +45,8 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
         broadcastUsers(roomId);
 
         const currentCode = codeMap.get(roomId) || '';
-        socket.emit(SOCKET_EVENTS.CODE.SYNC, { code: currentCode });
+        const currentLanguage = langMap.get(roomId) || 'javascript';
+        socket.emit(SOCKET_EVENTS.CODE.SYNC, { code: currentCode, language: currentLanguage });
     });
 
     // Leave Room
@@ -63,10 +65,15 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
         codeMap.set(roomId, code);
         socket.to(roomId).emit(SOCKET_EVENTS.CODE.UPDATE, { code });
     });
-
+    
     socket.on(SOCKET_EVENTS.CODE.CURSOR_MOVE, ({ roomId, username, cursor }) => {
         socket.to(roomId).emit(SOCKET_EVENTS.CODE.CURSOR_UPDATE, { username, cursor });
     });
+    
+    socket.on(SOCKET_EVENTS.CODE.LANG_CHANGE, ({ roomId, language }) => {
+        langMap.set(roomId, language);
+        socket.to(roomId).emit(SOCKET_EVENTS.CODE.LANG_UPDATE, { language });
+    })
 
     // Chat Events
     socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, ({ roomId, username, message }) => {
