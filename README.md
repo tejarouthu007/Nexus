@@ -7,7 +7,8 @@ Nexus is a real-time collaborative code editor that allows multiple users to edi
 - 🧑‍💻 **Live Code Collaboration** – Real-time code syncing across multiple users in the same room.
 - 💾 **Multi-language Support** – Choose from popular languages like JavaScript, Python, C++, etc.
 - 💬 **Integrated Chat** – Talk to your teammates while you code.
-- ⚙️ **Code Execution** – Run code directly in the browser (coming soon).
+- 📍 **Cursor Tracking** – Live Cursors to track who is editing where.
+- ⚙️ **Code Execution** – Run code directly in the browser.
 
 ## 🚀 Tech Stack
 

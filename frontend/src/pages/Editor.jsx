@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useSocket } from "../context/SocketProvider";
 import CodeMirror from "@uiw/react-codemirror";
@@ -32,6 +32,7 @@ import { EVENTS } from "../constants/events";
 import Chat from "../components/Chat";
 import RunCode from "../components/RunCode";
 import UserList from "../components/UserList";
+import createRemoteCursorPlugin from "../components/Cursor.js"
 
 const languageMap = {
   javascript,
@@ -49,17 +50,24 @@ const languageMap = {
   r: () => StreamLanguage.define(r),
   php,
   sql,
+  html,
+  css,
+  markdown,
 };
 
 const languageOptions = Object.keys(languageMap);
 
+
 const Editor = () => {
   const { state } = useLocation();
   const socket = useSocket().socket;
+  const editorRef = useRef(null);
+  const timeoutRef = useRef(null); 
 
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
   const [activeTab, setActiveTab] = useState(null);
+  const [userCursors, setUserCursors] = useState(new Map());
 
   useEffect(() => {
     if (socket?.emit && state?.roomId && state.username) {
@@ -73,21 +81,79 @@ const Editor = () => {
 
   const handleCodeChange = (newCode) => {
     setCode(newCode);
+  
+    const view = editorRef.current?.view;
+    if (!view) return;
+  
+    const pos = view.state.selection.main.head;
+    const line = view.state.doc.lineAt(pos);
+    const col = pos - line.from;
+  
+    const cursorPos = { line: line.number - 1, col };
+    console.log("Cursor position:", cursorPos);
+  
     if (socket && state?.roomId) {
       socket.emit(EVENTS.CODE.CHANGE, { roomId: state.roomId, code: newCode });
+      socket.emit(EVENTS.CODE.CURSOR_MOVE, {
+        roomId: state.roomId,
+        username: state.username,
+        cursor: cursorPos,
+      });
     }
   };
 
+  const getCursors = () => {
+    return userCursors;
+  }
+  
+  const remoteCursorExtension = useMemo(() => createRemoteCursorPlugin(getCursors), [userCursors]);
+
   useEffect(() => {
     if (!socket) return;
-
-    socket.on(EVENTS.CODE.UPDATE, ({ code }) => setCode(code));
-    socket.on(EVENTS.CODE.SYNC, ({ code }) => setCode(code));
-
+  
+  
+    const clearCursorTimeout = () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current); 
+      }
+    };
+  
+    socket.on(EVENTS.CODE.UPDATE, ({ code }) => {
+      setCode(code);
+      clearCursorTimeout();
+    });
+  
+    socket.on(EVENTS.CODE.SYNC, ({ code }) => {
+      setCode(code);
+      clearCursorTimeout();
+    });
+  
+    socket.on(EVENTS.CODE.CURSOR_UPDATE, ({ username, cursor }) => {
+      setUserCursors((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(username, cursor);
+  
+        clearCursorTimeout();
+        
+        timeoutRef.current = setTimeout(() => {
+          setUserCursors((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(username);
+            return newMap;
+          });
+        }, 800); // Reset timeout
+  
+        return newMap;
+      });
+    });
+  
     return () => {
       socket.off(EVENTS.CODE.UPDATE);
+      socket.off(EVENTS.CODE.CURSOR_UPDATE);
+      clearCursorTimeout(); 
     };
   }, [socket]);
+  
 
   const currentExtension = useMemo(() => languageMap[language](), [language]);
 
@@ -145,13 +211,14 @@ const Editor = () => {
           <div className="absolute inset-0"> 
             {/* Placeholder */}
             {code === "" && (
-              <div className="absolute top-0.5 left-9 text-gray-500 pointer-events-none select-none z-10">
+              <div className="absolute top-0.5 left-9 text-gray-500 font-mono pointer-events-none select-none z-10">
                 Start typing your code here...
               </div>
             )}
             <CodeMirror
+              ref={editorRef}
               value={code}
-              extensions={[currentExtension]}
+              extensions={[currentExtension, remoteCursorExtension]}
               theme={oneDark}
               onChange={handleCodeChange}
               className="w-full" 

@@ -11,14 +11,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "https://nexus-editor-live.vercel.app",
+        origin: ["https://nexus-editor-live.vercel.app","http://localhost:5173"],
         methods: ["GET", "POST"],
         credentials: true,
     }
 });
 
 app.use(cors({
-    origin: "https://nexus-editor-live.vercel.app",
+    origin: ["https://nexus-editor-live.vercel.app","http://localhost:5173"],
     methods: ["GET", "POST"],
     credentials: true,
 }));
@@ -41,6 +41,7 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
         const user = { socketId: socket.id, username, roomId };
         userSocketMap.push(user);
         socket.join(roomId);
+        broadcastUsers(roomId);
 
         const currentCode = codeMap.get(roomId) || '';
         socket.emit(SOCKET_EVENTS.CODE.SYNC, { code: currentCode });
@@ -50,6 +51,7 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     socket.on(SOCKET_EVENTS.ROOM.LEAVE, ({ roomId, username }) => {
         userSocketMap = userSocketMap.filter((u) => u.socketId !== socket.id);
         socket.leave(roomId);
+        broadcastUsers(roomId);
     });
 
     socket.on(SOCKET_EVENTS.ROOM.GET_USERS, ({ roomId }) => {
