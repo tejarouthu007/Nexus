@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSocket } from "../context/SocketProvider";
 import CodeMirror from "@uiw/react-codemirror";
 
@@ -27,7 +27,7 @@ import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
 import { markdown } from "@codemirror/lang-markdown";
 
-import { FileText, Play, MessageSquare, User, Code2Icon } from "lucide-react";
+import { FileText, Play, MessageSquare, User, Code2Icon, LogOut, Info} from "lucide-react";
 import { EVENTS } from "../constants/events";
 import Chat from "../components/Chat";
 import RunCode from "../components/RunCode";
@@ -63,11 +63,13 @@ const Editor = () => {
   const socket = useSocket().socket;
   const editorRef = useRef(null);
   const timeoutRef = useRef(null); 
+  const navigate = useNavigate();
 
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
   const [activeTab, setActiveTab] = useState(null);
   const [userCursors, setUserCursors] = useState(new Map());
+  const [showId, setShowId] = useState(false);
 
   useEffect(() => {
     if (socket?.emit && state?.roomId && state.username) {
@@ -107,6 +109,13 @@ const Editor = () => {
       socket.emit(EVENTS.CODE.LANG_CHANGE, { roomId:state.roomId, language });
     }
   };
+
+  const handleLeaveRoom = () => {
+    if (socket?.emit && state?.roomId && state.username) {
+      socket.emit(EVENTS.ROOM.LEAVE, { roomId: state.roomId, username: state.username });
+      navigate('/');
+    }
+  }
 
   const getCursors = () => {
     return userCursors;
@@ -173,21 +182,36 @@ const Editor = () => {
   
 
   return (
-    <div className="flex h-screen"> 
+    <div className="flex h-screen min-h-screen"> 
       {/* Sidebar */}
       <div className="flex h-full">
         <div className="w-16 h-full bg-gray-800 flex flex-col items-center py-4 space-y-6">
           <button onClick={() => setActiveTab(activeTab === "files" ? null : "files")}>
-            <FileText className="text-gray-300 hover:text-white" size={24} />
+            <FileText className="text-gray-300 hover:text-green-500" size={24} />
           </button>
           <button onClick={() => setActiveTab(activeTab === "run" ? null : "run")}>
-            <Play className="text-gray-300 hover:text-white" size={24} />
+            <Play className="text-gray-300 hover:text-green-500" size={24} />
           </button>
           <button onClick={() => setActiveTab(activeTab === "chat" ? null : "chat")}>
-            <MessageSquare className="text-gray-300 hover:text-white" size={24} />
+            <MessageSquare className="text-gray-300 hover:text-green-500" size={24} />
           </button>
           <button onClick={() => setActiveTab(activeTab === "users" ? null : "users")}>
-            <User className="text-gray-300 hover:text-white" size={24} />
+            <User className="text-gray-300 hover:text-green-500" size={24} />
+          </button>
+          <div className="relative inline-block group">
+            <button className="focus:outline-none z-10 relative">
+              <Info
+                className="text-gray-300 hover:text-white"
+                size={24}
+              />
+            </button>
+
+            <div className="absolute left-[80%] top-1/2 -translate-y-1/2 hidden group-hover:flex group-hover:opacity-100 bg-black text-white text-xs px-3 py-1 rounded shadow-lg whitespace-nowrap z-20 pointer-events-auto">
+              Room ID: <span className="text-green-400 font-semibold ml-1">{state?.roomId}</span>
+            </div>
+          </div>
+          <button onClick={handleLeaveRoom}>
+            <LogOut className="text-gray-300 hover:text-red-500 transform -scale-x-100" size={24} />
           </button>
         </div>
 
@@ -205,11 +229,12 @@ const Editor = () => {
       {/* Code Editor */}
       <div className="flex-1 h-full flex flex-col bg-gray-900">
         <div className="flex justify-between items-center bg-gray-800 p-3 text-white gap-4 rounded-l">
-          <div className="flex items-center flex-row gap-2">
+          <div className="flex items-center flex-row gap-2 items-center">
             <Code2Icon size={28}/>
-            <span className="font-bold text-lg"> Live Code Editor</span>
+            <span className="text-green-500 font-bold text-xl tracking-tight bg-gradient-to-tr text-transparent bg-clip-text from-green-500 via-green-400 to-blue-400">Nexus Code Editor</span>
           </div>
-          <div className="flex gap-3">
+
+          <div className="flex gap-3 items-center">
             <select
               value={language}
               onChange={(e) => handleLanguageChange(e.target.value)}
