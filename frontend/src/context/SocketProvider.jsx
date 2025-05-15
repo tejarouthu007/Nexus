@@ -12,6 +12,8 @@ const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
+  const [roomId, setRoomId] = useState(() => localStorage.getItem("roomId") || null);
+  const [username, setUsername] = useState(() => localStorage.getItem("username") || null);
 
   useEffect(() => {
     socket.connect();
@@ -19,9 +21,9 @@ export const SocketProvider = ({ children }) => {
     const handleNewMessage = ({ username, message }) => {
       setMessages((prev) => [...prev, { user: username, message }]);
     };
-
+    
     socket.on(EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
-
+    
     return () => {
       socket.off(EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
       socket.disconnect();
@@ -29,7 +31,7 @@ export const SocketProvider = ({ children }) => {
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket, messages, setMessages }}>
+    <SocketContext.Provider value={{ socket, messages, setMessages, roomId, setRoomId, username, setUsername }}>
       {children}
     </SocketContext.Provider>
   );

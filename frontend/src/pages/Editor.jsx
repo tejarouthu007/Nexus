@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useSocket } from "../context/SocketProvider";
 import CodeMirror from "@uiw/react-codemirror";
 
@@ -59,8 +59,7 @@ const languageOptions = Object.keys(languageMap);
 
 
 const Editor = () => {
-  const { state } = useLocation();
-  const socket = useSocket().socket;
+  const { socket, roomId, username } = useSocket(); 
   const editorRef = useRef(null);
   const timeoutRef = useRef(null); 
   const navigate = useNavigate();
@@ -69,17 +68,19 @@ const Editor = () => {
   const [language, setLanguage] = useState("javascript");
   const [activeTab, setActiveTab] = useState(null);
   const [userCursors, setUserCursors] = useState(new Map());
-  const [showId, setShowId] = useState(false);
 
   useEffect(() => {
-    if (socket?.emit && state?.roomId && state.username) {
-      socket.emit(EVENTS.ROOM.JOIN, { roomId: state.roomId, username: state.username });
+    if(!socket) {
+      navigate('/');
+    }
+    if (socket.emit && roomId && username) {
+      socket.emit(EVENTS.ROOM.JOIN, { roomId: roomId, username: username });
 
       return () => {
-        socket.emit(EVENTS.ROOM.LEAVE, { roomId: state.roomId, username: state.username });
+        socket.emit(EVENTS.ROOM.LEAVE, { roomId: roomId, username: username });
       };
     }
-  }, [socket, state?.roomId, state?.username]);
+  }, [socket, roomId, username]);
 
   const handleCodeChange = (newCode) => {
     setCode(newCode);
@@ -93,11 +94,11 @@ const Editor = () => {
   
     const cursorPos = { line: line.number - 1, col };
   
-    if (socket && state?.roomId) {
-      socket.emit(EVENTS.CODE.CHANGE, { roomId: state.roomId, code: newCode });
+    if (socket && roomId) {
+      socket.emit(EVENTS.CODE.CHANGE, { roomId: roomId, code: newCode });
       socket.emit(EVENTS.CODE.CURSOR_MOVE, {
-        roomId: state.roomId,
-        username: state.username,
+        roomId: roomId,
+        username: username,
         cursor: cursorPos,
       });
     }
@@ -105,14 +106,15 @@ const Editor = () => {
 
   const handleLanguageChange = ( language ) => {
     setLanguage(language);
-    if (socket && state?.roomId) {
-      socket.emit(EVENTS.CODE.LANG_CHANGE, { roomId:state.roomId, language });
+    if (socket && roomId) {
+      socket.emit(EVENTS.CODE.LANG_CHANGE, { roomId: roomId, language });
     }
   };
 
   const handleLeaveRoom = () => {
-    if (socket?.emit && state?.roomId && state.username) {
-      socket.emit(EVENTS.ROOM.LEAVE, { roomId: state.roomId, username: state.username });
+    if (socket?.emit && roomId && username) {
+      socket.emit(EVENTS.ROOM.LEAVE, { roomId: roomId, username: username });
+      localStorage.clear('localStorageCleared')
       navigate('/');
     }
   }
@@ -207,7 +209,7 @@ const Editor = () => {
             </button>
 
             <div className="absolute left-[80%] top-1/2 -translate-y-1/2 hidden group-hover:flex group-hover:opacity-100 bg-black text-white text-xs px-3 py-1 rounded shadow-lg whitespace-nowrap z-20 pointer-events-auto">
-              Room ID: <span className="text-green-400 font-semibold ml-1">{state?.roomId}</span>
+              Room ID: <span className="text-green-400 font-semibold ml-1">{roomId}</span>
             </div>
           </div>
           <button onClick={handleLeaveRoom}>
@@ -220,8 +222,8 @@ const Editor = () => {
           <div className="w-80 bg-gray-900 h-full p-4 text-gray-300 overflow-auto">
             {activeTab === "files" && <div>Files Panel</div>}
             {activeTab === "run" && <RunCode code={code} language={language} />}
-            {activeTab === "chat" && <Chat roomId={state.roomId} username={state.username} />}
-            {activeTab === "users" && <UserList roomId={state.roomId}/>}
+            {activeTab === "chat" && <Chat roomId={roomId} username={username} />}
+            {activeTab === "users" && <UserList roomId={roomId}/>}
           </div>
         )}
       </div>

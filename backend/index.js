@@ -15,7 +15,9 @@ const io = new Server(server, {
         origin: ["https://nexus-editor-live.vercel.app", "http://localhost:5173"],
         methods: ["GET", "POST"],
         credentials: true,
-    }
+    },
+    pingInterval: 10000,
+    pingTimeout: 20000,
 });
 
 app.use(cors({
