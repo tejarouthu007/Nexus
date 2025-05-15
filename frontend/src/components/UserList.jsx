@@ -28,7 +28,7 @@ const UserList = ({ roomId }) => {
       <h3 className="text-lg font-semibold mb-2">Active Users</h3>
       <ul className="space-y-2">
         {users.map((user) => (
-          <li key={user.id} className="flex items-center gap-2">
+          <li key={user.socketId} className="flex items-center gap-2">
             <User size={18} className="text-green-400" />
             <span>{user.username}</span>
           </li>

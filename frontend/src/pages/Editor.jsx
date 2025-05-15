@@ -70,18 +70,16 @@ const Editor = () => {
   const [userCursors, setUserCursors] = useState(new Map());
 
   useEffect(() => {
-    setRoomId(localStorage.getItem("roomId"));
-    setUsername(localStorage.getItem("username"));
-    if (socket?.emit && roomId && username) {
-      socket.emit(EVENTS.ROOM.JOIN, { roomId: roomId, username: username });
+    if (!socket || !roomId || !username) return;
 
-      return () => {
-        socket.emit(EVENTS.ROOM.LEAVE, { roomId: roomId, username: username });
-      };
-    } else {
-      navigate('/');
-    }
-  }, [socket, roomId, username]);
+    socket.emit(EVENTS.ROOM.JOIN, { roomId, username });
+    console.log("connected to room", roomId);
+
+    return () => {
+      socket.emit(EVENTS.ROOM.LEAVE, { roomId, username });
+    };
+  }, [socket?.id, roomId, username]);
+
 
   const handleCodeChange = (newCode) => {
     setCode(newCode);
