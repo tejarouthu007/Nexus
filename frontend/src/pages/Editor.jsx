@@ -59,7 +59,7 @@ const languageOptions = Object.keys(languageMap);
 
 
 const Editor = () => {
-  const { socket, roomId, username } = useSocket(); 
+  const { socket, roomId, setRoomId, username, setUsername } = useSocket(); 
   const editorRef = useRef(null);
   const timeoutRef = useRef(null); 
   const navigate = useNavigate();
@@ -70,15 +70,16 @@ const Editor = () => {
   const [userCursors, setUserCursors] = useState(new Map());
 
   useEffect(() => {
-    if(!socket) {
-      navigate('/');
-    }
-    if (socket.emit && roomId && username) {
+    setRoomId(localStorage.getItem("roomId"));
+    setUsername(localStorage.getItem("username"));
+    if (socket?.emit && roomId && username) {
       socket.emit(EVENTS.ROOM.JOIN, { roomId: roomId, username: username });
 
       return () => {
         socket.emit(EVENTS.ROOM.LEAVE, { roomId: roomId, username: username });
       };
+    } else {
+      navigate('/');
     }
   }, [socket, roomId, username]);
 
