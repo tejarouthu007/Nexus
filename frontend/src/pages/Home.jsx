@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useSocket } from "../context/SocketProvider";
 
 const Home = () => {
-  const { roomId, setRoomId, username, setUsername } = useSocket();
+  const { socket, roomId, setRoomId, username, setUsername, isConnected } = useSocket();
   const navigate = useNavigate();
 
   const joinRoom = (e) => {
     e.preventDefault();
+    
     if (username.trim() && roomId.trim()) {
       navigate(`/editor`);
     }
@@ -87,10 +88,21 @@ const Home = () => {
 
         <button
           type="submit"
-          className="w-full py-3 bg-green-600 hover:bg-green-500 rounded-md font-semibold transition duration-300"
+          disabled={!isConnected}
+          className={`w-full py-3 rounded-md font-semibold transition duration-300 flex items-center justify-center gap-2 ${
+            isConnected ? "bg-green-600 hover:bg-green-500" : "bg-gray-600 cursor-not-allowed"
+          }`}
         >
-          Join Room
+          {!isConnected ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Connecting to the server...
+            </>
+          ) : (
+            "Join Room"
+          )}
         </button>
+
       </form>
     </div>
   );
