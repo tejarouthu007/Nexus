@@ -4,7 +4,19 @@ import { useSocket } from "../context/SocketProvider";
 import CodeMirror from "@uiw/react-codemirror";
 
 // Themes
-import { oneDark } from "@codemirror/theme-one-dark";
+import { andromeda } from "@uiw/codemirror-theme-andromeda";
+import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
+import { vscodeDark } from "@uiw/codemirror-theme-vscode";
+import { materialDark, materialLight } from "@uiw/codemirror-theme-material";
+import { duotoneDark, duotoneLight } from "@uiw/codemirror-theme-duotone";
+import { dracula } from "@uiw/codemirror-theme-dracula";
+import { xcodeDark, xcodeLight } from "@uiw/codemirror-theme-xcode";
+import { bbedit } from "@uiw/codemirror-theme-bbedit";
+import { abcdef } from "@uiw/codemirror-theme-abcdef";
+import { sublime } from "@uiw/codemirror-theme-sublime";
+import { nord } from "@uiw/codemirror-theme-nord";
+import { consoleDark, consoleLight } from "@uiw/codemirror-theme-console";
+import { whiteDark, whiteLight } from "@uiw/codemirror-theme-white";
 
 // Language extensions
 import { javascript } from "@codemirror/lang-javascript";
@@ -27,12 +39,13 @@ import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
 import { markdown } from "@codemirror/lang-markdown";
 
-import { FileText, Play, MessageSquare, User, Code2Icon, LogOut, Info} from "lucide-react";
+import { FolderClosed, Play, MessageSquare, User, Code2Icon, LogOut, Info} from "lucide-react";
 import { EVENTS } from "../constants/events";
 import Chat from "../components/Chat";
 import RunCode from "../components/RunCode";
 import UserList from "../components/UserList";
 import createRemoteCursorPlugin from "../components/Cursor.js"
+import FilePanel from "../components/FilePanel.jsx";
 
 const languageMap = {
   javascript,
@@ -55,35 +68,86 @@ const languageMap = {
   markdown,
 };
 
+const themes = {
+  vscodeDark,
+  andromeda,
+  githubDark,
+  githubLight,
+  materialDark,
+  materialLight,
+  duotoneDark,
+  duotoneLight,
+  dracula,
+  xcodeDark,
+  xcodeLight,
+  bbedit,
+  abcdef,
+  sublime,
+  nord,
+  consoleDark,
+  consoleLight,
+  whiteDark,
+  whiteLight,
+};
+
+const langExtensionMap = {
+  javascript: ["js", "jsx", "ts", "tsx"],
+  python: ["py"],
+  java: ["java"],
+  cpp: ["cpp", "c", "cc", "cxx", "h", "hpp"],
+  shell: ["sh", "bash"],
+  rust: ["rs"],
+  perl: ["pl", "pm"],
+  go: ["go"],
+  swift: ["swift"],
+  kotlin: ["kt", "kts"],
+  ruby: ["rb"],
+  lua: ["lua"],
+  r: ["r"],
+  php: ["php"],
+  sql: ["sql"],
+  html: ["html", "htm"],
+  css: ["css"],
+  markdown: ["md", "markdown"],
+  json: ["json"]
+};
+
 const languageOptions = Object.keys(languageMap);
 
 
 const Editor = () => {
-  const { socket, roomId, setRoomId, username, setUsername } = useSocket(); 
+  const { socket, roomId, username } = useSocket(); 
   const editorRef = useRef(null);
   const timeoutRef = useRef(null); 
   const navigate = useNavigate();
 
-  const [code, setCode] = useState("");
-  const [language, setLanguage] = useState("javascript");
+  const [files, setFiles] = useState([{name: "index", content: "", language: "javascript", extension: "js"}]);
+  const [activeFile, setActiveFile] = useState({name: "index", content: "", language: "javascript", extension: "js"});
   const [activeTab, setActiveTab] = useState(null);
+  const [selectedTheme, setSelectedTheme] = useState(vscodeDark);
   const [userCursors, setUserCursors] = useState(new Map());
 
   useEffect(() => {
     if (!socket || !roomId || !username) return;
 
     socket.emit(EVENTS.ROOM.JOIN, { roomId, username });
-    console.log("connected to room", roomId);
 
     return () => {
       socket.emit(EVENTS.ROOM.LEAVE, { roomId, username });
     };
   }, [socket?.id, roomId, username]);
 
-
   const handleCodeChange = (newCode) => {
-    setCode(newCode);
-  
+    const updatedFile = { ...activeFile, content: newCode };
+    
+    setFiles(prevFiles =>
+      prevFiles.map(file =>
+        file.name === activeFile.name && file.extension === activeFile.extension
+        ? updatedFile
+        : file
+      )
+    );
+    setActiveFile(updatedFile);
     const view = editorRef.current?.view;
     if (!view) return;
   
@@ -94,19 +158,33 @@ const Editor = () => {
     const cursorPos = { line: line.number - 1, col };
   
     if (socket && roomId) {
-      socket.emit(EVENTS.CODE.CHANGE, { roomId: roomId, code: newCode });
+      socket.emit(EVENTS.CODE.CHANGE, { roomId: roomId, file: updatedFile });
       socket.emit(EVENTS.CODE.CURSOR_MOVE, {
         roomId: roomId,
         username: username,
+        filename: updatedFile.name,
+        extension: updatedFile.extension,
         cursor: cursorPos,
       });
     }
   };
 
-  const handleLanguageChange = ( language ) => {
-    setLanguage(language);
+  const handleLanguageChange = (language) => {
+    const updatedFile = {
+      ...activeFile,
+      language,
+      extension: langExtensionMap[language][0],
+    };
+    setFiles(prevFiles =>
+      prevFiles.map(file =>
+        file.name === activeFile.name && file.extension === activeFile.extension
+        ? updatedFile
+        : file
+      )
+    );
+    setActiveFile(updatedFile);
     if (socket && roomId) {
-      socket.emit(EVENTS.CODE.LANG_CHANGE, { roomId: roomId, language });
+      socket.emit(EVENTS.CODE.LANG_CHANGE, { roomId, file: updatedFile });
     }
   };
 
@@ -122,93 +200,146 @@ const Editor = () => {
     return userCursors;
   }
   
+  const clearCursorTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current); 
+    }
+  };
   const remoteCursorExtension = useMemo(() => createRemoteCursorPlugin(getCursors), [userCursors]);
 
   useEffect(() => {
     if (!socket) return;
   
-    const clearCursorTimeout = () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current); 
-      }
-    };
   
-    socket.on(EVENTS.CODE.UPDATE, ({ code }) => {
-      setCode(code);
+    socket.on(EVENTS.CODE.UPDATE, ({ file }) => {
+      if(file.name === activeFile.name && file.extension === activeFile.extension)
+        setActiveFile(file);
+      setFiles(prevFiles =>
+        prevFiles.map(prev =>
+          (file.name === prev.name) && (file.extension === prev.extension)
+          ? file 
+          : prev
+        )
+      );
       clearCursorTimeout();
     });
   
-    socket.on(EVENTS.CODE.SYNC, ({ code, language }) => {
-      setCode(code);
-      setLanguage(language);
-      clearCursorTimeout();
-    });
-  
-    socket.on(EVENTS.CODE.CURSOR_UPDATE, ({ username, cursor }) => {
-      setUserCursors((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(username, cursor);
-  
-        clearCursorTimeout();
-        
-        timeoutRef.current = setTimeout(() => {
-          setUserCursors((prev) => {
-            const newMap = new Map(prev);
-            newMap.delete(username);
-            return newMap;
-          });
-        }, 800); // Reset timeout
-  
-        return newMap;
-      });
+    socket.on(EVENTS.FILE.SYNC, ({ newFiles }) => {
+      newFiles.forEach(file => {
+        console.log(file.name);
+      })
+      setFiles(newFiles);
+      setActiveFile(newFiles[0]);
     });
 
-    socket.on(EVENTS.CODE.LANG_UPDATE, ({ language }) => {
-      setLanguage(language);
-    })
-  
+    socket.on(EVENTS.CODE.LANG_UPDATE, ({ file }) => {
+      setFiles(prevFiles =>
+        prevFiles.map(prev =>
+          (prev.name === activeFile.name && prev.extension === activeFile.extension)
+            ? file 
+            : prev
+        )
+      );
+      setActiveFile(file);
+    });
+
+    socket.on(EVENTS.FILE.SYNC_NEW_FILE, ({ file }) => {
+      setFiles((prev) => [...prev, file]);
+    });
+
     return () => {
       socket.off(EVENTS.CODE.UPDATE);
       socket.off(EVENTS.CODE.LANG_UPDATE);
-      socket.off(EVENTS.CODE.CURSOR_UPDATE);
+      socket.off(EVENTS.FILE.SYNC);
+      socket.off(EVENTS.FILE.SYNC_NEW_FILE);
       clearCursorTimeout(); 
     };
-  }, [socket]);
+  }, [socket, activeFile, files]);
+
+  useEffect(() => {
+    socket.on(EVENTS.FILE.SYNC_REQUEST, ({ toSocketId }) => {
+      socket.emit(EVENTS.FILE.SYNC_RESPONSE, { toSocketId, newFiles: files });
+    });
+
+    return () => {
+      socket.off(EVENTS.FILE.SYNC_REQUEST);
+    }
+  }, [socket, activeFile, files]);
+
+  useEffect(() => {
+    socket.on(EVENTS.CODE.CURSOR_UPDATE, ({ username, filename, extension, cursor }) => {
+      if(filename === activeFile.name && extension === activeFile.extension) {
+        setUserCursors((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(username, cursor);
+    
+          clearCursorTimeout();
+          
+          timeoutRef.current = setTimeout(() => {
+            setUserCursors((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(username);
+              return newMap;
+            });
+          }, 800); // Reset timeout
+    
+          return newMap;
+        });
+      }
+    });
+    return () => {
+      socket.off(EVENTS.CODE.CURSOR_UPDATE);
+    } 
+  }, [socket, activeFile]);
   
 
+  const wrapperRef = useRef(null); 
+  const [bgColor, setBgColor] = useState("rgb(30,30,30)");
+
+  useEffect(() => {
+    if (wrapperRef.current) {
+      const cm = wrapperRef.current.querySelector(".cm-editor");
+      if (cm) {
+        const styles = getComputedStyle(cm);
+        setBgColor(styles.backgroundColor);
+      }
+    }
+  }, [selectedTheme]);
+
   const currentExtension = useMemo(() => {
-    const lang = languageMap[language];
+    const lang = languageMap[activeFile.language];
     return typeof lang === "function" ? lang() : lang;
-  }, [language]);
+  }, [activeFile.language]);
   
 
   return (
-    <div className="flex h-screen min-h-screen"> 
+    <div className="flex h-screen min-h-screen bg-gray-900 overflow-hidden"> 
       {/* Sidebar */}
-      <div className="flex h-full">
-        <div className="w-16 h-full bg-gray-800 flex flex-col items-center py-4 space-y-6">
+      <div className="flex h-full py-1 pl-1">
+        <div className="w-16 h-full bg-gray-800 flex flex-col items-center py-4 space-y-6 rounded-lg">
           <button onClick={() => setActiveTab(activeTab === "files" ? null : "files")}>
-            <FileText className="text-gray-300 hover:text-green-500" size={24} />
+            <FolderClosed className={`hover:text-blue-500 ${activeTab=="files"? "text-blue-500": "text-gray-300"}`} size={24} />
           </button>
           <button onClick={() => setActiveTab(activeTab === "run" ? null : "run")}>
-            <Play className="text-gray-300 hover:text-green-500" size={24} />
+            <Play className={`hover:text-blue-500 ${activeTab=="run"? "text-blue-500": "text-gray-300"}`} size={24} />
           </button>
           <button onClick={() => setActiveTab(activeTab === "chat" ? null : "chat")}>
-            <MessageSquare className="text-gray-300 hover:text-green-500" size={24} />
+            <MessageSquare className={`hover:text-blue-500 ${activeTab=="chat"? "text-blue-500": "text-gray-300"}`} size={24} />
           </button>
           <button onClick={() => setActiveTab(activeTab === "users" ? null : "users")}>
-            <User className="text-gray-300 hover:text-green-500" size={24} />
+            <User className={`hover:text-blue-500 ${activeTab=="users"? "text-blue-500": "text-gray-300"}`} size={24} />
           </button>
           <div className="relative inline-block group">
             <button className="focus:outline-none z-10 relative">
               <Info
-                className="text-gray-300 hover:text-white"
+                className="text-gray-300 hover:text-blue-500"
                 size={24}
               />
             </button>
 
-            <div className="absolute left-[80%] top-1/2 -translate-y-1/2 hidden group-hover:flex group-hover:opacity-100 bg-black text-white text-xs px-3 py-1 rounded shadow-lg whitespace-nowrap z-20 pointer-events-auto">
-              Room ID: <span className="text-green-400 font-semibold ml-1">{roomId}</span>
+            <div className="absolute left-[80%] top-1/2 -translate-y-1/2 hidden group-hover:flex group-hover: flex-col group-hover:opacity-100 bg-black text-white text-xs px-3 py-1 rounded shadow-lg whitespace-nowrap z-20 pointer-events-auto">
+              <span>Room ID: <span className="text-green-400 font-semibold ml-1">{roomId}</span></span>
+              <span>Username: <span className="text-green-400 font-semibold ml-1">{username}</span></span>
             </div>
           </div>
           <button onClick={handleLeaveRoom}>
@@ -218,9 +349,9 @@ const Editor = () => {
 
         {/* Sidebar Content */}
         {activeTab && (
-          <div className="w-80 bg-gray-900 h-full p-4 text-gray-300 overflow-auto">
-            {activeTab === "files" && <div>Files Panel</div>}
-            {activeTab === "run" && <RunCode code={code} language={language} />}
+          <div className="w-80 bg-gray-900 h-full pl-1 text-gray-300 overflow-auto">
+            {activeTab === "files" && <FilePanel roomId={roomId} username={username} files={files} setFiles={setFiles} activeFile={activeFile} setActiveFile={setActiveFile} />}
+            {activeTab === "run" && <RunCode code={activeFile.content} language={activeFile.language} />}
             {activeTab === "chat" && <Chat roomId={roomId} username={username} />}
             {activeTab === "users" && <UserList roomId={roomId}/>}
           </div>
@@ -228,39 +359,57 @@ const Editor = () => {
       </div>
 
       {/* Code Editor */}
-      <div className="flex-1 h-full flex flex-col bg-gray-900">
-        <div className="flex justify-between items-center bg-gray-800 p-3 text-white gap-4 rounded-l">
+      <div className="flex-1 h-full flex flex-col bg-gray-900 p-1">
+        <div className="flex justify-between items-center bg-gray-800 p-3 text-white gap-4 rounded-lg">
           <div className="flex items-center flex-row gap-2 items-center">
             <Code2Icon size={28}/>
-            <span className="text-green-500 font-bold text-xl tracking-tight bg-gradient-to-tr text-transparent bg-clip-text from-green-500 via-green-400 to-blue-400">Nexus Code Editor</span>
+            <span className="text-green-500 font-bold text-xl tracking-tight bg-gradient-to-tr text-transparent bg-clip-text from-blue-400 via-blue-600 to-blue-800">Nexus Code Editor</span>
           </div>
 
           <div className="flex gap-3 items-center">
+            <div className="bg-gradient-to-tr from-blue-900 via-blue-800 to-blue-700 text-white border border-gray-600 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-400 transition-all duration-150">
+              Active: <span className="text-green-400 font-bold">{activeFile.name + '.' +  activeFile.extension || "Untitled"}</span>
+            </div>
             <select
-              value={language}
+              className="bg-gradient-to-tr from-blue-900 via-blue-800 to-blue-700 text-white border border-gray-600 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-400 transition-all duration-150"
+              value={selectedTheme}
+              onChange={(e) => setSelectedTheme(e.target.value)}
+            >
+              {Object.keys(themes).map((theme) => (
+                <option key={theme} value={theme} className="bg-gray-800 text-white">
+                  {theme}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={activeFile.language}
               onChange={(e) => handleLanguageChange(e.target.value)}
-              className="border-2 bg-gray-700 text-white rounded px-2 py-1"
+              className="bg-gradient-to-tr from-blue-900 via-blue-800 to-blue-700 text-white border border-gray-600 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-400 transition-all duration-150"
             >
               {languageOptions.map((lang) => (
-                <option key={lang} value={lang}>{lang}</option>
+                <option key={lang} value={lang} className="bg-gray-800 text-white">
+                  {lang}
+                </option>
               ))}
             </select>
           </div>
+
         </div>
 
-        <div className="flex-1 relative overflow-auto bg-[#282c34] rounded-l"> 
+        <div ref={wrapperRef} className={`flex-1 relative overflow-auto rounded-lg`} style={{ backgroundColor: bgColor }}> 
           <div className="absolute inset-0"> 
             {/* Placeholder */}
-            {code === "" && (
+            {activeFile.content === "" && (
               <div className="absolute top-0.5 left-9 text-gray-500 font-mono pointer-events-none select-none z-10">
                 Start typing your code here...
               </div>
             )}
             <CodeMirror
               ref={editorRef}
-              value={code}
+              value={activeFile.content}
               extensions={[currentExtension, remoteCursorExtension]}
-              theme={oneDark}
+              theme={themes[selectedTheme] || vscodeDark}
               onChange={handleCodeChange}
               className="w-full" 
               basicSetup={{

@@ -34,7 +34,7 @@ const Home = () => {
       {/* Hero Section */}
       <div className="text-center mb-10">
         <div className="mb-4">
-          <div className="w-16 h-16 mx-auto bg-gradient-to-tr from-blue-500 to-green-400 rounded-full flex items-center justify-center text-2xl font-bold">
+          <div className="w-16 h-16 mx-auto bg-gradient-to-tr from-blue-800 via-blue-600 to-blue-400 rounded-full flex items-center justify-center text-2xl font-bold">
             NX
           </div>
         </div>
@@ -42,7 +42,7 @@ const Home = () => {
           Nexus Code Editor
         </h1>
         <p className="text-gray-400 text-lg max-w-xl mx-auto">
-          Collaborate in real-time with powerful language support, chat, and instant execution.
+          Collaborate in real-time with powerful language support, chat, themes, and instant execution.
         </p>
       </div>
 
@@ -80,7 +80,7 @@ const Home = () => {
           <button
             type="button"
             onClick={generateRoomId}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-md font-semibold transition duration-300"
+            className="px-4 py-2 bg-gradient-to-tr from-green-600 via-green-500 to-green-400 hover:to-green-500 hover:from-green-500 rounded-md font-semibold transition duration-300"
           >
             Generate
           </button>
@@ -90,7 +90,7 @@ const Home = () => {
           type="submit"
           disabled={!isConnected}
           className={`w-full py-3 rounded-md font-semibold transition duration-300 flex items-center justify-center gap-2 ${
-            isConnected ? "bg-green-600 hover:bg-green-500" : "bg-gray-600 cursor-not-allowed"
+            isConnected ? "bg-gradient-to-tr from-blue-800 via-blue-600 to-blue-400 hover:to-blue-600 hover:from-blue-600" : "bg-gray-600 cursor-not-allowed"
           }`}
         >
           {!isConnected ? (

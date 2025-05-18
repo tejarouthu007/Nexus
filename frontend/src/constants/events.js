@@ -12,15 +12,23 @@ export const EVENTS = {
       USER_LIST: "user_list",
       GET_USERS: "get_users",
     },
-    
+  
     CODE: {
       CHANGE: "code_change",
       UPDATE: "code_update",
-      SYNC: 'code_sync',
       CURSOR_MOVE: "cursor_move",
       CURSOR_UPDATE: "cursor_position_update",
       LANG_CHANGE: "lang_change",
       LANG_UPDATE: "lang_update",
+    },
+    FILE: {
+      SYNC_REQUEST: "sync_request",
+      SYNC_RESPONSE: "sync_response",
+      SYNC: "sync_files",
+      NEW_FILE: "new_file",
+      SYNC_NEW_FILE: "sync_new_file",
+      FILE_DELETED: "delete_file",
+      FILE_RENAMED: "rename_file"
     },
   
     EXECUTION: {

@@ -30,33 +30,37 @@ app.use(express.json());
 const PORT = process.env.PORT || 5000;
 
 const roomUsersMap = new Map(); 
-const codeMap = new Map();   
-const langMap = new Map();  
 
 // Handle socket connections
 io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
 
     // Authenticate
     socket.on(SOCKET_EVENTS.AUTHENTICATE, ({ username }) => {
-        // Optional authentication logic
+        // authentication logic
     });
 
     // Join Room
     socket.on(SOCKET_EVENTS.ROOM.JOIN, ({ roomId, username }) => {
         const user = { socketId: socket.id, username };
-
+        
         if (!roomUsersMap.has(roomId)) {
             roomUsersMap.set(roomId, []);
+        } else {
+            const roomUsers = roomUsersMap.get(roomId);
+            if (roomUsers.length > 0) {
+                const userPrime = roomUsers[0];
+                io.to(userPrime.socketId).emit(SOCKET_EVENTS.FILE.SYNC_REQUEST, { toSocketId: user.socketId });
+            }
         }
-
+        
         roomUsersMap.get(roomId).push(user);
         socket.join(roomId);
 
         broadcastUsers(roomId);
+    });
 
-        const currentCode = codeMap.get(roomId) || '';
-        const currentLanguage = langMap.get(roomId) || 'javascript';
-        socket.emit(SOCKET_EVENTS.CODE.SYNC, { code: currentCode, language: currentLanguage });
+    socket.on(SOCKET_EVENTS.FILE.SYNC_RESPONSE, ({ toSocketId, newFiles}) => {
+        io.to(toSocketId).emit(SOCKET_EVENTS.FILE.SYNC, {newFiles});
     });
 
     // Leave Room
@@ -66,8 +70,6 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
 
         if (updatedUsers.length === 0) {
             roomUsersMap.delete(roomId);
-            codeMap.delete(roomId);
-            langMap.delete(roomId);
         } else {
             roomUsersMap.set(roomId, updatedUsers);
             broadcastUsers(roomId);
@@ -82,20 +84,23 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     });
 
     // Code change
-    socket.on(SOCKET_EVENTS.CODE.CHANGE, ({ roomId, code }) => {
-        codeMap.set(roomId, code);
-        socket.to(roomId).emit(SOCKET_EVENTS.CODE.UPDATE, { code });
+    socket.on(SOCKET_EVENTS.CODE.CHANGE, ({ roomId, file }) => {
+        socket.to(roomId).emit(SOCKET_EVENTS.CODE.UPDATE, { file });
     });
 
     // Cursor movement
-    socket.on(SOCKET_EVENTS.CODE.CURSOR_MOVE, ({ roomId, username, cursor }) => {
-        socket.to(roomId).emit(SOCKET_EVENTS.CODE.CURSOR_UPDATE, { username, cursor });
+    socket.on(SOCKET_EVENTS.CODE.CURSOR_MOVE, ({ roomId, username, filename, extension, cursor }) => {
+        socket.to(roomId).emit(SOCKET_EVENTS.CODE.CURSOR_UPDATE, { username, filename, extension, cursor });
     });
 
     // Language change
-    socket.on(SOCKET_EVENTS.CODE.LANG_CHANGE, ({ roomId, language }) => {
-        langMap.set(roomId, language);
-        socket.to(roomId).emit(SOCKET_EVENTS.CODE.LANG_UPDATE, { language });
+    socket.on(SOCKET_EVENTS.CODE.LANG_CHANGE, ({ roomId, file }) => {
+        socket.to(roomId).emit(SOCKET_EVENTS.CODE.LANG_UPDATE, { file });
+    });
+
+    // New File
+    socket.on(SOCKET_EVENTS.FILE.NEW_FILE, ({ roomId, file }) => {
+        socket.to(roomId).emit(SOCKET_EVENTS.FILE.SYNC_NEW_FILE, { file });
     });
 
     // Chat messages
@@ -139,8 +144,6 @@ function removeUserFromAllRooms(socketId) {
         const updatedUsers = users.filter(u => u.socketId !== socketId);
         if (updatedUsers.length === 0) {
             roomUsersMap.delete(roomId);
-            codeMap.delete(roomId);
-            langMap.delete(roomId);
         } else {
             roomUsersMap.set(roomId, updatedUsers);
             broadcastUsers(roomId);

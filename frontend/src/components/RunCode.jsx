@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Play } from "lucide-react";
 
 const RunCode = ({ code, language }) => {
   const [output, setOutput] = useState("Run to view output");
@@ -16,7 +17,7 @@ const RunCode = ({ code, language }) => {
         },
         body: JSON.stringify({
           language,
-          version: "*", // use latest version
+          version: "*",
           files: [
             {
               name: "main",
@@ -42,14 +43,28 @@ const RunCode = ({ code, language }) => {
   };
 
   return (
-    <div>
-      <button
-        onClick={runCode}
-        className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
+    <div className="flex flex-col h-full bg-gray-800 rounded-lg p-4">
+      <div className="mb-3">
+        <button
+          onClick={runCode}
+          disabled={loading}
+          className={`bg-blue-700 flex items-center gap-2 text-white px-5 py-2 rounded-md 
+            hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 
+            transition disabled:opacity-60 disabled:cursor-not-allowed`}
+        >
+          <Play
+            size={18}
+            className={`${loading ? "animate-pulse" : ""}`}
+            aria-hidden="true"
+          />
+          {loading ? "Running..." : "Run Code"}
+        </button>
+      </div>
+
+      <div
+        className="flex-1 bg-gray-900 font-semibold font-mono text-green-400 p-4 rounded-md text-sm overflow-auto whitespace-pre-wrap border border-gray-700 shadow-inner transition-colors duration-300"
+        aria-live="polite"
       >
-        Run Code
-      </button>
-      <div className="bg-gray-800 p-2 rounded text-sm font-bold text-green-400 whitespace-pre-wrap overflow-auto">
         {output}
       </div>
     </div>

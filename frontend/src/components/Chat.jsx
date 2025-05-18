@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSocket } from "../context/SocketProvider";
 import { EVENTS } from "../constants/events";
 import { User, MessageSquare } from "lucide-react";
@@ -6,6 +6,12 @@ import { User, MessageSquare } from "lucide-react";
 const Chat = ({ roomId, username }) => {
   const [newMessage, setMessage] = useState("");
   const { socket, messages, setMessages } = useSocket();
+  const messagesEndRef = useRef(null);
+
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = () => {
     if (newMessage.trim() === "") return;
@@ -17,20 +23,21 @@ const Chat = ({ roomId, username }) => {
     });
 
     setMessages((prev) => [...prev, { user: username, message: newMessage }]);
-
     setMessage("");
   };
 
   return (
-    <div className="h-full flex flex-col w-full">
-      <h1 className="text-xl font-bold mb-2">Chat</h1>
+    <div className="h-full flex flex-col w-full p-4 shadow-sm bg-gray-800 rounded-lg">
+      <h1 className="text-xl font-semibold mb-4 flex items-center gap-2 z-10">
+        <MessageSquare className="text-blue-500" size={20} /> Chat 
+      </h1>
 
-      {/* Scrollable chat messages */}
-      <div className="p-2 overflow-auto flex-grow">
+      {/* Scrollable Messages */}
+      <div className="flex-1 overflow-y-auto mb-4 pr-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         {messages.map((msg, index) => (
           <div
             key={index}
-            className="p-3 mb-2 flex gap-3 items-start rounded-lg border border-gray-200 bg-blue shadow-sm"
+            className="p-3 mb-3 flex gap-3 items-center rounded-md bg-gray-900 text-white"
           >
             <div className="flex flex-col items-center gap-2 pt-1">
               <User size={18} className="text-green-500" />
@@ -38,15 +45,16 @@ const Chat = ({ roomId, username }) => {
             </div>
             <div className="flex flex-col">
               <p className="font-semibold">{msg.user}</p>
-              <p>{msg.message}</p>
+              <p className="text-sm">{msg.message}</p>
             </div>
           </div>
         ))}
+
+        <div ref={messagesEndRef} />
       </div>
 
-
-      {/* Input and Send button at bottom */}
-      <div className="mt-2 flex">
+      {/* Input & Send */}
+      <div className="flex gap-2">
         <input
           type="text"
           value={newMessage}
@@ -57,17 +65,16 @@ const Chat = ({ roomId, username }) => {
               handleSend();
             }
           }}
-          className="flex-grow border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Type a message..."
+          className="flex-grow px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
         <button
-          className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
           onClick={handleSend}
+          className="px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
         >
           Send
         </button>
       </div>
-
     </div>
   );
 };
