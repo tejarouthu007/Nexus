@@ -4,6 +4,7 @@ import cors from "cors";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
 import { SOCKET_EVENTS } from "./events/events.js";
+import aiRoutes from './routes/aiRoutes.js';
 
 dotenv.config();
 
@@ -26,6 +27,8 @@ app.use(cors({
     credentials: true,
 }));
 app.use(express.json());
+app.use('/api/ai', aiRoutes);
+
 
 const PORT = process.env.PORT || 5000;
 

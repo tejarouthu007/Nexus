@@ -39,13 +39,14 @@ import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
 import { markdown } from "@codemirror/lang-markdown";
 
-import { FolderClosed, Play, MessageSquare, User, Code2Icon, LogOut, Info} from "lucide-react";
+import { FolderClosed, Play, MessageSquare, User, Sparkles, Code2Icon, LogOut, Info} from "lucide-react";
 import { EVENTS } from "../constants/events";
 import Chat from "../components/Chat";
 import RunCode from "../components/RunCode";
 import UserList from "../components/UserList";
 import createRemoteCursorPlugin from "../components/Cursor.js"
 import FilePanel from "../components/FilePanel.jsx";
+import Assistant from "../components/Assistant.jsx";
 
 const languageMap = {
   javascript,
@@ -326,6 +327,9 @@ const Editor = () => {
           <button onClick={() => setActiveTab(activeTab === "chat" ? null : "chat")}>
             <MessageSquare className={`hover:text-blue-500 ${activeTab=="chat"? "text-blue-500": "text-gray-300"}`} size={24} />
           </button>
+          <button onClick={() => setActiveTab(activeTab === "ai" ? null : "ai")}>
+            <Sparkles className={`hover:text-blue-500 ${activeTab=="ai"? "text-blue-500": "text-gray-300"}`} size={24} />
+          </button>
           <button onClick={() => setActiveTab(activeTab === "users" ? null : "users")}>
             <User className={`hover:text-blue-500 ${activeTab=="users"? "text-blue-500": "text-gray-300"}`} size={24} />
           </button>
@@ -353,6 +357,7 @@ const Editor = () => {
             {activeTab === "files" && <FilePanel roomId={roomId} username={username} files={files} setFiles={setFiles} activeFile={activeFile} setActiveFile={setActiveFile} />}
             {activeTab === "run" && <RunCode code={activeFile.content} language={activeFile.language} />}
             {activeTab === "chat" && <Chat roomId={roomId} username={username} />}
+            {activeTab === "ai" && <Assistant handleCodeChange={handleCodeChange} language={activeFile.language} currentExtension={currentExtension} selectedTheme={selectedTheme} themes={themes}/>}
             {activeTab === "users" && <UserList roomId={roomId}/>}
           </div>
         )}
