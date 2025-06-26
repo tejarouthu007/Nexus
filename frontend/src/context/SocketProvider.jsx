@@ -1,53 +1,44 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { EVENTS } from "../constants/events";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-const socket = io(VITE_BACKEND_URL, {
-  withCredentials: true,
-  autoConnect: false,
-});
 
 const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
-  const [roomId, setRoomId] = useState(() => localStorage.getItem("roomId") || null);
-  const [username, setUsername] = useState(() => localStorage.getItem("username") || null);
-  const [isConnected, setIsConnected] = useState(socket.connected); // initial state
+  const socketRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false); // initial state
 
-  useEffect(() => {
-    socket.connect();
+  const connectSocket = ({ roomId, username }) => {
 
-    const handleConnect = () => {
+    const socket = io(VITE_BACKEND_URL, {
+      withCredentials: true,
+      autoConnect: true,
+      query: { roomId },
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
       setIsConnected(true);
-      console.log("Socket connected with id:", socket.id);
-    };
+      console.log("Connected to socket:", socket.id);
+    });
 
-    const handleDisconnect = () => {
+    socket.on("disconnect", () => {
       setIsConnected(false);
-      console.log("Socket disconnected");
-    };
+      console.log("Disconnected from socket");
+    });
 
-    const handleNewMessage = ({ username, message }) => {
+    socket.on(EVENTS.CHAT.NEW_MESSAGE, ({ username, message }) => {
       setMessages((prev) => [...prev, { user: username, message }]);
-    };
-    
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
-    socket.on(EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
-    
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("disconnect", handleDisconnect);
-      socket.off(EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
-      socket.disconnect();
-    };
-  }, []);
+    });
+  };
 
   return (
     <SocketContext.Provider
-      value={{ socket, messages, setMessages, roomId, setRoomId, username, setUsername, isConnected }}
+      value={{ socket: socketRef.current, connectSocket, messages, setMessages, isConnected }}
     >
       {children}
     </SocketContext.Provider>

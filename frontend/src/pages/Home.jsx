@@ -1,21 +1,31 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../context/SocketProvider";
 
-const Home = () => {
-  const { socket, roomId, setRoomId, username, setUsername, isConnected } = useSocket();
+const Home = ({ roomId, setRoomId, username, setUsername }) => {
   const navigate = useNavigate();
+  const { connectSocket, isConnected } = useSocket();
+
+  const [joining, setJoining] = useState(false);
 
   const joinRoom = (e) => {
     e.preventDefault();
-    
+
     if (username.trim() && roomId.trim()) {
-      navigate(`/editor`);
+      setJoining(true);
+      connectSocket({ roomId, username });
     }
   };
 
+  // Navigate after successful connection
+  useEffect(() => {
+    if (joining && isConnected) {
+      navigate("/editor");
+    }
+  }, [joining, isConnected, navigate]);
+
   const generateRoomId = () => {
-    const newRoomId = crypto.randomUUID(); 
+    const newRoomId = crypto.randomUUID();
     setRoomId(newRoomId);
     localStorage.setItem("roomId", newRoomId);
   };
@@ -23,8 +33,8 @@ const Home = () => {
   useEffect(() => {
     const hasCleared = localStorage.getItem("localStorageCleared");
     if (!hasCleared) {
-      localStorage.clear("roomId");
-      localStorage.clear("username");
+      localStorage.removeItem("roomId");
+      localStorage.removeItem("username");
       localStorage.setItem("localStorageCleared", true);
     }
   }, []);
@@ -88,21 +98,14 @@ const Home = () => {
 
         <button
           type="submit"
-          disabled={!isConnected}
-          className={`w-full py-3 rounded-md font-semibold transition duration-300 flex items-center justify-center gap-2 ${
-            isConnected ? "bg-gradient-to-tr from-blue-800 via-blue-600 to-blue-400 hover:to-blue-600 hover:from-blue-600" : "bg-gray-600 cursor-not-allowed"
-          }`}
+          className="w-full py-3 rounded-md font-semibold transition duration-300 flex items-center justify-center gap-2 bg-gradient-to-tr from-blue-800 via-blue-600 to-blue-400 hover:to-blue-600 hover:from-blue-600"
         >
-          {!isConnected ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Connecting to the server...
-            </>
+          {joining && !isConnected ? (
+            <span className="animate-pulse">Connecting...</span>
           ) : (
             "Join Room"
           )}
         </button>
-
       </form>
     </div>
   );

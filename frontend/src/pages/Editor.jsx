@@ -116,8 +116,8 @@ const langExtensionMap = {
 const languageOptions = Object.keys(languageMap);
 
 
-const Editor = () => {
-  const { socket, roomId, username } = useSocket(); 
+const Editor = ({roomId, username}) => {
+  const { socket, isConnected } = useSocket(); 
   const editorRef = useRef(null);
   const timeoutRef = useRef(null); 
   const navigate = useNavigate();

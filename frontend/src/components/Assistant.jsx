@@ -15,7 +15,7 @@ const Assistant = ({ handleCodeChange, language, currentExtension, selectedTheme
     const modifiedPrompt = `Prompt: ${prompt}\n\n{If the above prompt specifies a language, generate code in the specified language. If it doesn't, generate code in ${language}. Do not include markdown or triple backticks.}`;
     setLoading(true);
     try {
-      const res = await axios.post(`${VITE_BACKEND_URL}/api/ai/generate`, { prompt: modifiedPrompt });
+      const res = await axios.post(`${VITE_BACKEND_URL}/api/ai/generate/`, { prompt: modifiedPrompt });
       setCode(res.data.code);
     } catch (err) {
       console.error("Generation failed:", err);
