@@ -33,7 +33,8 @@ services:
     volumes:
       - ./nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf
     ports:
-      - "9000:9000"
+      - "443:443"
+      - "80:80"
     networks:
       - internal
     depends_on:
