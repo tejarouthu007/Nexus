@@ -10,10 +10,7 @@ Nexus is a real-time collaborative code editor that allows multiple users to edi
 - 🤖 **AI Code Assistant** – Instantly generate code with AI assistant.
 - 📍 **Cursor Tracking** – Live Cursors to track who is editing where.
 - ⚙️ **Code Execution** – Run code directly in the browser.
-
-
-
-
+- 🔁 **Load Balancing** – Room Based Sticky Load Balancing across multiple server instances.
 
 ## 🚀 Tech Stack
 
@@ -26,7 +23,11 @@ Nexus is a real-time collaborative code editor that allows multiple users to edi
 ### Backend
 - Node.js + Express
 - Socket.IO Server
+- Docker
 - Gemini API
+
+### Reverse Proxy
+- Openresty + Nginx
 
 ## 📦 Installation
 

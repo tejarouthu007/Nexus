@@ -6,6 +6,7 @@ services:
       context: ./backend
     environment:
       - PORT=3001
+      - GEMINI_API_KEY={GEMINI_API_KEY}
       - INSTANCE=backend1
     networks:
       - internal
@@ -15,6 +16,7 @@ services:
       context: ./backend
     environment:
       - PORT=3002
+      - GEMINI_API_KEY={GEMINI_API_KEY}
       - INSTANCE=backend2
     networks:
       - internal
@@ -24,6 +26,7 @@ services:
       context: ./backend
     environment:
       - PORT=3003
+      - GEMINI_API_KEY={GEMINI_API_KEY}
       - INSTANCE=backend3
     networks:
       - internal
