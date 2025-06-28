@@ -192,7 +192,8 @@ const Editor = ({roomId, username}) => {
   const handleLeaveRoom = () => {
     if (socket?.emit && roomId && username) {
       socket.emit(EVENTS.ROOM.LEAVE, { roomId: roomId, username: username });
-      localStorage.clear('localStorageCleared')
+      localStorage.clear('localStorageCleared');
+      socket.disconnect();
       navigate('/');
     }
   }
