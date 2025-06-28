@@ -226,9 +226,6 @@ const Editor = ({roomId, username}) => {
     });
   
     socket.on(EVENTS.FILE.SYNC, ({ newFiles }) => {
-      newFiles.forEach(file => {
-        console.log(file.name);
-      })
       setFiles(newFiles);
       setActiveFile(newFiles[0]);
     });
@@ -246,7 +243,7 @@ const Editor = ({roomId, username}) => {
 
     socket.on(EVENTS.FILE.SYNC_NEW_FILE, ({ file }) => {
       setFiles((prev) => [...prev, file]);
-    });
+    });  
 
     return () => {
       socket.off(EVENTS.CODE.UPDATE);
@@ -292,6 +289,40 @@ const Editor = ({roomId, username}) => {
       socket.off(EVENTS.CODE.CURSOR_UPDATE);
     } 
   }, [socket, activeFile]);
+
+  useEffect(() => {
+    socket.on(EVENTS.FILE.FILE_DELETED, ({file}) => {
+      setFiles(prev => {
+      const updated = prev.filter(f => !(f.name === file.name && f.extension === file.extension));
+        if (activeFile && activeFile.name === file.name && activeFile.extension === file.extension) {
+          setActiveFile(updated[0] || null);
+        }
+        return updated;
+      });
+    });
+
+    socket.on(EVENTS.FILE.FILE_RENAMED, ({oldFile, newFile}) => {
+      setFiles(prev =>
+        prev.map(file =>
+          file.name === oldFile.name && file.extension === oldFile.extension
+            ? { ...file, name: newFile.name, extension: newFile.extension }
+            : file
+        )
+      );
+
+      if (
+        activeFile &&
+        activeFile.name === oldFile.name &&
+        activeFile.extension === oldFile.extension
+      ) {
+        setActiveFile(newFile);
+      }
+    });
+    return () => {
+      socket.off(EVENTS.FILE.FILE_DELETED);
+      socket.off(EVENTS.FILE.FILE_RENAMED);
+    }
+  }, [socket, activeFile, files]);
   
 
   const wrapperRef = useRef(null); 

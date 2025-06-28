@@ -106,6 +106,18 @@ io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
         socket.to(roomId).emit(SOCKET_EVENTS.FILE.SYNC_NEW_FILE, { file });
     });
 
+    // Delete File
+    socket.on(SOCKET_EVENTS.FILE.FILE_DELETED, ({ roomId, file }) => {
+        socket.to(roomId).emit(SOCKET_EVENTS.FILE.FILE_DELETED, { file });
+    });
+
+    // Rename File
+    socket.on(SOCKET_EVENTS.FILE.FILE_RENAMED, ({ roomId, oldFile, newFile }) => {
+        socket.to(roomId).emit(SOCKET_EVENTS.FILE.FILE_RENAMED, { oldFile, newFile });
+        // console.log(oldFile.name +" " + oldFile.extension);
+        // console.log(newFile.name +" " + newFile.extension);
+    });
+
     // Chat messages
     socket.on(SOCKET_EVENTS.CHAT.SEND_MESSAGE, ({ roomId, username, message }) => {
         socket.to(roomId).emit(SOCKET_EVENTS.CHAT.NEW_MESSAGE, { username, message });
